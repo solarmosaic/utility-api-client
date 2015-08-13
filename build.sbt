@@ -3,12 +3,12 @@ import sbt.Keys._
 val buildVersion = "1." + sys.props.get("ROOT_BUILD_NUMBER").map(b => "%06d".format(b.toInt))
   .getOrElse(sys.env.get("ROOT_BUILD_NUMBER").map(b => "%06d".format(b.toInt)).getOrElse("SNAPSHOT"))
 
-// TODO this lib should be available publicly and published to maven
 lazy val `utility-api-client` = (project in file("."))
   .configs(IntegrationTest)
   .settings(Defaults.itSettings: _*)
   .settings(
-    crossScalaVersions := Seq("2.10.4", "2.11.7"),
+    crossScalaVersions := Seq("2.10.4", "2.11.6"),
+    description := "A Scala client integration for UtilityAPI using Spray.",
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-osgi" % "2.3.9",
@@ -20,15 +20,22 @@ lazy val `utility-api-client` = (project in file("."))
       "org.specs2" %% "specs2-junit" % ProjectSettings.specs2Version % "it, test",
       "org.specs2" %% "specs2-mock" % ProjectSettings.specs2Version % "it, test"
     ),
+    licenses := Seq("MIT" -> new URL("http://opensource.org/licenses/MIT")),
     name := ProjectSettings.projectRootName,
     organization := "com.solarmosaic.client",
+    organizationHomepage := Some(new URL("https://github.com/solarmosaic")),
     packageOptions in (Compile, packageBin) += Package.ManifestAttributes(
       new java.util.jar.Attributes.Name("BuildDate") -> new java.util.Date().toString
     ),
     publishArtifact in Test := true,
-    publishTo := Some("MosaicArtifactory" at "http://art.intranet.solarmosaic.com/artifactory/internal"),
+    publishMavenStyle := true,
+    publishTo := Some(
+      "MosaicArtifactory" at "http://art.intranet.solarmosaic.com/artifactory/internal"
+      // TODO add OSS Sonatype
+    ),
     scalaVersion := "2.11.4",
     sbtVersion := "0.13.8",
+    startYear := Some(2015),
     resolvers := Seq("Artifactory" at "http://art.intranet.solarmosaic.com/artifactory/repo"),
     version := buildVersion
   )
