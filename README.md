@@ -3,20 +3,20 @@
 A [Scala](http://scala-lang.org/) client integration for [UtilityAPI](https://utilityapi.com/) using
 [Spray](http://spray.io/).
 
-# Installation
+## Installation
 
 Installation instructions forthcoming.
 
-# Usage
+## Usage
 
 Usage instructions forthcoming.
 
-# Contributing
+## Contributing
 
 This repository is a mirror of our internal [Gerrit](https://www.gerritcodereview.com/) repository. Therefore, we do not
 support merging code through Github itself. Please feel free to create issues or open pull requests here and we will do
 our best to resolve them internally.
 
-# License
+## License
 
 [MIT](http://opensource.org/licenses/MIT)
