@@ -1,7 +1,7 @@
 import sbt.Keys._
 
-val buildVersion = "1." + sys.props.get("ROOT_BUILD_NUMBER").map(b => "%06d".format(b.toInt))
-  .getOrElse(sys.env.get("ROOT_BUILD_NUMBER").map(b => "%06d".format(b.toInt)).getOrElse("SNAPSHOT"))
+val buildNumber = sys.props.get("ROOT_BUILD_NUMBER").map(b => "+%06d".format(b.toInt))
+  .getOrElse(sys.env.get("ROOT_BUILD_NUMBER").map(b => "+%06d".format(b.toInt)).getOrElse("-SNAPSHOT"))
 
 lazy val `utility-api-client` = (project in file("."))
   .configs(IntegrationTest)
@@ -36,7 +36,7 @@ lazy val `utility-api-client` = (project in file("."))
       new java.util.jar.Attributes.Name("BuildDate") -> new java.util.Date().toString
     ),
     pomIncludeRepository := { _ => false },
-    publishArtifact in Test := true,
+    publishArtifact in Test := false,
     publishMavenStyle := true,
     publishTo := {
       val nexus = "https://oss.sonatype.org/"
@@ -53,5 +53,5 @@ lazy val `utility-api-client` = (project in file("."))
     sbtVersion := "0.13.8",
     startYear := Some(2015),
     resolvers := Seq("Artifactory" at "http://art.intranet.solarmosaic.com/artifactory/repo"),
-    version := buildVersion
+    version := "1.0.0" + buildNumber
   )
