@@ -9,6 +9,14 @@ lazy val `utility-api-client` = (project in file("."))
   .settings(
     crossScalaVersions := Seq("2.10.4", "2.11.6"),
     description := "A Scala client integration for UtilityAPI using Spray.",
+    developers := List(
+      Developer(
+        "kflorence",
+        "Kyle Florence",
+        "kyle.florence@joinmosaic.com",
+        new URL("https://github.com/kflorence")
+      )
+    ),
     javacOptions ++= Seq("-source", "1.8", "-target", "1.8", "-Xlint"),
     libraryDependencies ++= Seq(
       "com.typesafe.akka" %% "akka-osgi" % "2.3.9",
@@ -27,13 +35,21 @@ lazy val `utility-api-client` = (project in file("."))
     packageOptions in (Compile, packageBin) += Package.ManifestAttributes(
       new java.util.jar.Attributes.Name("BuildDate") -> new java.util.Date().toString
     ),
+    pomIncludeRepository := { _ => false },
     publishArtifact in Test := true,
     publishMavenStyle := true,
-    publishTo := Some(
-      "MosaicArtifactory" at "http://art.intranet.solarmosaic.com/artifactory/internal"
-      // TODO add OSS Sonatype
-    ),
+    publishTo := {
+      val nexus = "https://oss.sonatype.org/"
+      if (isSnapshot.value)
+        Some("snapshots" at nexus + "content/repositories/snapshots")
+      else
+        Some("releases" at nexus + "service/local/staging/deploy/maven2")
+    },
     scalaVersion := "2.11.4",
+    scmInfo := Some(ScmInfo(
+      new URL("https://github.com/solarmosaic/utility-api-client"),
+      "https://github.com/solarmosaic/utility-api-client.git"
+    )),
     sbtVersion := "0.13.8",
     startYear := Some(2015),
     resolvers := Seq("Artifactory" at "http://art.intranet.solarmosaic.com/artifactory/repo"),
