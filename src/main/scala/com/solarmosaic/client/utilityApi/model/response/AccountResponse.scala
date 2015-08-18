@@ -7,15 +7,15 @@ import org.joda.time.DateTime
  * UtilityAPI account response object.
  * @see https://utilityapi.com/api/docs/api.html#account-object
  *
- * @param uid Unique identifier for this account.
- * @param userUid Unique identifier for the User that created this account.
- * @param utility Utility string abbreviation.
- * @param created ISO 8601 formatted String representing the creation date of this account.
- * @param authType The type of authorization submitted (either "owner" or "3rdparty").
- * @param auth Details about the authorizer. See the link above for more details.
- * @param authExpires ISO 8601 formatted String representing when customer authorization expires.
- * @param login The type of access that was used to collect this data (either "credentials" or "account_number").
- * @param latest The latest log message for service access of the account (either "pending", "updated", or "error").
+ * @param uid The unique identifier of the object.
+ * @param userUid The unique identifier of the User that created the Account.
+ * @param utility The utility abbreviation.
+ * @param created A timestamp from when the object was created.
+ * @param authType The type of authorization submitted. Can be either "owner" or "3rdparty".
+ * @param auth Details about the authorizer.
+ * @param authExpires A timestamp from when the customer authorization expires.
+ * @param login The type of access to that is used to collect the data.
+ * @param latest The latest log message for service access of the account.
  * @param modified The latest log message for modifying the account.
  */
 case class AccountResponse(

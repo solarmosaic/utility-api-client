@@ -24,4 +24,7 @@ object FormatTypes extends Enumeration {
 
   val csv = Value(`text/csv`)
   val json = Value(`application/json`)
+  val pdf = Value(`application/pdf`)
+  val xml = Value(`text/xml`)
+  val zip = Value(`application/zip`)
 }
