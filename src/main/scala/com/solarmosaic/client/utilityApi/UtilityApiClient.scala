@@ -29,11 +29,15 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.solarmosaic.client.utilityApi.`type`.FormatTypes
 import com.solarmosaic.client.utilityApi.`type`.FormatTypes.FormatType
+import com.solarmosaic.client.utilityApi.json.IsoDateTimeConversions
 import com.solarmosaic.client.utilityApi.model.response._
+import com.solarmosaic.client.utilityApi.util.PathWrappers
+import org.joda.time.DateTime
 import spray.can.Http
 import spray.client.pipelining._
 import spray.http.HttpHeaders.{Accept, Authorization}
-import spray.http._
+import spray.http.Uri.Path
+import spray.http.{StatusCodes, GenericHttpCredentials, HttpRequest}
 import spray.httpx.{UnsuccessfulResponseException, SprayJsonSupport}
 import spray.httpx.unmarshalling.FromResponseUnmarshaller
 
@@ -51,10 +55,13 @@ import scala.concurrent.duration._
 case class UtilityApiClient(
   token: String,
   timeoutDuration: FiniteDuration = 10.seconds
-) extends SprayJsonSupport {
+) extends SprayJsonSupport with IsoDateTimeConversions with PathWrappers {
   implicit val system = ActorSystem("utility-api-client")
   implicit val timeout = Timeout(timeoutDuration)
   import system.dispatcher
+
+  /** Base path to api endpoints */
+  lazy val base = Path("/api")
 
   /**
    * Set up a host-specific connection with SSL encryption enabled.
@@ -70,14 +77,13 @@ case class UtilityApiClient(
   /**
    * Gets a future response from the host connection, unmarshalling it to the given type.
    *
-   * @param format Which format to deliver the response in.
    * @param request The HTTP request.
+   * @param format Which format to deliver the response in.
    * @tparam T The type to unmarshal the response to.
    * @return A Future containing the unmarshalled response object.
    */
-  protected[utilityApi] def response[T: FromResponseUnmarshaller](
-    request: HttpRequest
-  )(implicit format: FormatType = FormatTypes.json): Future[T] = connection
+  protected[utilityApi] def response[T: FromResponseUnmarshaller](request: HttpRequest)
+      (implicit format: FormatType = FormatTypes.json): Future[T] = connection
     .map(sendAndReceive => addHeader(Authorization(GenericHttpCredentials("Token", token)))
       ~> addHeader(Accept(format.mediaType))
       ~> sendAndReceive
@@ -86,27 +92,97 @@ case class UtilityApiClient(
     .flatMap(_(request))
 
   /**
-   * Get an account by uid.
-   *
+   * Get an account by account uid.
    * @see https://utilityapi.com/api/docs/api.html#accounts-uid
-   * @param uid The unique identifier for the account.
-   * @param format The requested response format.
-   * @return A Future containing the account.
+   *
+   * @param accountUid The unique identifier for the account.
+   * @param format The response format.
+   * @return A Future containing Some account, or None if not found.
    */
-  def getAccount(uid: String)(implicit format: FormatType = FormatTypes.json): Future[Option[AccountResponse]] =
-    response[Option[AccountResponse]](Get(s"/api/accounts/$uid")) recover {
+  def getAccount(accountUid: String)
+      (implicit format: FormatType = FormatTypes.json): Future[Option[AccountResponse]] =
+    response[Option[AccountResponse]](Get(base / "accounts" / accountUid)) recover {
       case e: UnsuccessfulResponseException if e.response.status == StatusCodes.NotFound => None
     }
 
   /**
    * Get all accounts.
-   *
    * @see https://utilityapi.com/api/docs/api.html#accounts
-   * @param format The requested response format.
+   *
+   * @param format The response format.
    * @return A Future containing a list of accounts.
    */
-  def getAccounts()(implicit format: FormatType = FormatTypes.json): Future[List[AccountResponse]] =
-    response[List[AccountResponse]](Get("/api/accounts"))
+  def getAccounts()
+      (implicit format: FormatType = FormatTypes.json): Future[List[AccountResponse]] =
+    response[List[AccountResponse]](Get(base / "accounts"))
+
+  /**
+   * Get bills by service uid.
+   * @see https://utilityapi.com/api/docs/api.html#bills
+   *
+   * @param serviceUid The unique identifier for the service.
+   * @param format The response format.
+   * @return A Future containing a list of bills.
+   */
+  def getBillsByServiceUid(serviceUid: String)
+      (implicit format: FormatType = FormatTypes.json): Future[List[BillResponse]] =
+    response[List[BillResponse]](Get(base / "services" / serviceUid / "bills"))
+
+  /**
+   * Get meter intervals by service uid.
+   * @see https://utilityapi.com/api/docs/api.html#intervals
+   *
+   * @param serviceUid The unique identifier for the service.
+   * @param format The response format.
+   * @return A Future containing a list of meter intervals.
+   */
+  def getIntervalsByServiceUid(serviceUid: String, start: Option[DateTime], end: Option[DateTime])
+      (implicit format: FormatType = FormatTypes.json): Future[List[IntervalResponse]] =
+    response[List[IntervalResponse]] {
+      val path = base / "services" / serviceUid / "intervals"
+      val query = Seq(
+        start.map(s => "start" -> dateTimeToIsoFormat(s)),
+        end.map(e => "end" -> dateTimeToIsoFormat(e))
+      ).flatten
+      Get(path.withQuery(query: _*))
+    }
+
+  /**
+   * Get a service by service uid.
+   * @see https://utilityapi.com/api/docs/api.html#services-uid
+   *
+   * @param serviceUid The unique identifier for the service.
+   * @param format The response format.
+   * @return A Future containing Some service, or None if not found.
+   */
+  def getService(serviceUid: String)
+      (implicit format: FormatType = FormatTypes.json): Future[Option[ServiceResponse]] =
+    response[Option[ServiceResponse]](Get(base / "services" / serviceUid)) recover {
+      case e: UnsuccessfulResponseException if e.response.status == StatusCodes.NotFound => None
+    }
+
+  /**
+   * Get all services.
+   * @see https://utilityapi.com/api/docs/api.html#services
+   *
+   * @param format The response format.
+   * @return A Future containing a list of services.
+   */
+  def getServices()
+      (implicit format: FormatType = FormatTypes.json): Future[List[ServiceResponse]] =
+    response[List[ServiceResponse]](Get(base / "services"))
+
+  /**
+   * Get services by account uid.
+   * @see https://utilityapi.com/api/docs/api.html#services
+   *
+   * @param accountUid The unique identifier for the account.
+   * @param format The response format.
+   * @return A Future containing a list of account services.
+   */
+  def getServicesByAccountUid(accountUid: String)
+      (implicit format: FormatType = FormatTypes.json): Future[List[ServiceResponse]] =
+    response[List[ServiceResponse]](Get(base / "services" withQuery "accounts" -> accountUid))
 }
 
 object UtilityApiClient {

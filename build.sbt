@@ -1,7 +1,5 @@
-import sbt.Keys._
-
-val buildNumber = sys.props.get("ROOT_BUILD_NUMBER").map(b => "+%06d".format(b.toInt))
-  .getOrElse(sys.env.get("ROOT_BUILD_NUMBER").map(b => "+%06d".format(b.toInt)).getOrElse("-SNAPSHOT"))
+val buildVersion = "-" + sys.props.get("ROOT_BUILD_NUMBER").orElse(sys.env.get("ROOT_BUILD_NUMBER"))
+  .map("BUILD." + _).getOrElse("SNAPSHOT")
 
 lazy val `utility-api-client` = (project in file("."))
   .configs(IntegrationTest)
@@ -39,11 +37,12 @@ lazy val `utility-api-client` = (project in file("."))
     publishArtifact in Test := false,
     publishMavenStyle := true,
     publishTo := {
-      val nexus = "https://oss.sonatype.org/"
-      if (isSnapshot.value)
-        Some("snapshots" at nexus + "content/repositories/snapshots")
-      else
-        Some("releases" at nexus + "service/local/staging/deploy/maven2")
+      Some("MosaicArtifactory" at "http://art.intranet.solarmosaic.com/artifactory/internal")
+//      val nexus = "https://oss.sonatype.org/"
+//      if (isSnapshot.value)
+//        Some("snapshots" at nexus + "content/repositories/snapshots")
+//      else
+//        Some("releases" at nexus + "service/local/staging/deploy/maven2")
     },
     scalaVersion := "2.11.4",
     scmInfo := Some(ScmInfo(
@@ -53,5 +52,5 @@ lazy val `utility-api-client` = (project in file("."))
     sbtVersion := "0.13.8",
     startYear := Some(2015),
     resolvers := Seq("Artifactory" at "http://art.intranet.solarmosaic.com/artifactory/repo"),
-    version := "1.0.0" + buildNumber
+    version := "0.1.0" + buildVersion
   )

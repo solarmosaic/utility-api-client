@@ -4,6 +4,8 @@ import com.solarmosaic.client.utilityApi.model.response.AccountResponse
 import org.specs2.mutable.Specification
 import org.specs2.mock.Mockito
 import org.specs2.mock.mockito.MockitoFunctions
+import spray.http.Uri
+import spray.http.Uri.Path
 
 import scala.concurrent.Await
 
