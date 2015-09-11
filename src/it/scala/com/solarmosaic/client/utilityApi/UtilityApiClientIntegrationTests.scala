@@ -1,6 +1,8 @@
 package com.solarmosaic.client.utilityApi
 
+import com.solarmosaic.client.utilityApi.model.request.{ServiceModifyRequest, AccountModifyRequest}
 import com.solarmosaic.client.utilityApi.model.response._
+import org.joda.time.DateTime
 import org.specs2.mutable.Specification
 import org.specs2.mock.Mockito
 import org.specs2.mock.mockito.MockitoFunctions
@@ -41,20 +43,20 @@ class UtilityApiClientIntegrationTests extends Specification
 
   "getAccounts" should {
     "get all accounts" in {
-      accounts should beAnInstanceOf[List[AccountResponse]]
-      accounts should not be empty
+      accounts must beAnInstanceOf[List[AccountResponse]]
+      accounts must not be empty
     }
   }
 
   "getAccount" should {
     "not get an account for invalid account uid" in {
-      Await.result(client.getAccount(invalidUid), client.timeoutDuration) should beNone
+      Await.result(client.getAccount(invalidUid), client.timeoutDuration) must beNone
     }
 
     "get an account for valid account uid" in {
       val account = Await.result(client.getAccount(validAccountUid), client.timeoutDuration)
-      account should beSome[AccountResponse]
-      account.map(_.uid) should beSome(validAccountUid)
+      account must beSome[AccountResponse]
+      account.map(_.uid) must beSome(validAccountUid)
     }
   }
 
@@ -66,8 +68,8 @@ class UtilityApiClientIntegrationTests extends Specification
     }
 
     "get bills for valid service uid" in {
-      bills should beAnInstanceOf[List[BillResponse]]
-      bills should not be empty
+      bills must beAnInstanceOf[List[BillResponse]]
+      bills must not be empty
     }
   }
 
@@ -83,8 +85,8 @@ class UtilityApiClientIntegrationTests extends Specification
     }
 
     "get intervals for valid service uid" in {
-      intervals should beAnInstanceOf[List[IntervalResponse]]
-      intervals should not be empty
+      intervals must beAnInstanceOf[List[IntervalResponse]]
+      intervals must not be empty
     }
 
     "get intervals after the given start date" in {
@@ -94,8 +96,8 @@ class UtilityApiClientIntegrationTests extends Specification
         client.timeoutDuration
       )
 
-      subset should beAnInstanceOf[List[IntervalResponse]]
-      subset should not be empty
+      subset must beAnInstanceOf[List[IntervalResponse]]
+      subset must not be empty
     }
 
     "get intervals before the given end date" in {
@@ -105,8 +107,8 @@ class UtilityApiClientIntegrationTests extends Specification
         client.timeoutDuration
       )
 
-      subset should beAnInstanceOf[List[IntervalResponse]]
-      subset should not be empty
+      subset must beAnInstanceOf[List[IntervalResponse]]
+      subset must not be empty
     }
 
     "get intervals within the given start and end dates" in {
@@ -117,26 +119,26 @@ class UtilityApiClientIntegrationTests extends Specification
         client.timeoutDuration
       )
 
-      subset should beAnInstanceOf[List[IntervalResponse]]
-      subset should not be empty
+      subset must beAnInstanceOf[List[IntervalResponse]]
+      subset must not be empty
     }
   }
 
   "getServices" should {
     "get all services" in {
-      services should beAnInstanceOf[List[ServiceResponse]]
-      services should not be empty
+      services must beAnInstanceOf[List[ServiceResponse]]
+      services must not be empty
     }
   }
 
   "getService" should {
     "not get a service for invalid service uid" in {
-      Await.result(client.getService(invalidUid), client.timeoutDuration) should beNone
+      Await.result(client.getService(invalidUid), client.timeoutDuration) must beNone
     }
     "get a service for valid service uid" in {
       val service = Await.result(client.getService(validServiceUid), client.timeoutDuration)
-      service should beSome[ServiceResponse]
-      service.map(_.uid) should beSome(validServiceUid)
+      service must beSome[ServiceResponse]
+      service.map(_.uid) must beSome(validServiceUid)
     }
   }
 
@@ -151,9 +153,43 @@ class UtilityApiClientIntegrationTests extends Specification
         client.timeoutDuration
       )
 
-      accountServices should beAnInstanceOf[List[ServiceResponse]]
-      accountServices should not be empty
+      accountServices must beAnInstanceOf[List[ServiceResponse]]
+      accountServices must not be empty
       accountServices.head.accountUid === config("accountUidHasServices")
+    }
+  }
+
+  "modifyAccount" should {
+    "not get an account for invalid account uid" in {
+      val request = AccountModifyRequest()
+      Await.result(client.modifyAccount(invalidUid, request), client.timeoutDuration) must beNone
+    }
+
+// TODO figure out the proper data to pass to the API to get this request to work
+//    "get an account for valid account uid" in {
+//    }
+  }
+
+  "modifyService" should {
+    "not modify a service for invalid service uid" in {
+      val request = ServiceModifyRequest("now")
+      Await.result(client.modifyService(invalidUid, request), client.timeoutDuration) must beNone
+    }
+
+    "modify a service once for a valid service uid and an activeUntil value of 'now'" in {
+      val request = ServiceModifyRequest("now")
+      val service = Await.result(client.modifyService(config("serviceUidHasIntervals"), request), client.timeoutDuration)
+
+      service must beSome[ServiceResponse]
+      service.flatMap(_.latest.`type`) must beSome("pending")
+    }
+
+    "modify a service periodically for a valid service uid and an activeUntil of a year in the future" in {
+      val request = ServiceModifyRequest(DateTime.now.plusYears(1), updateData = true)
+      val service = Await.result(client.modifyService(config("serviceUidHasIntervals"), request), client.timeoutDuration)
+
+      service must beSome[ServiceResponse]
+      service.flatMap(_.latest.`type`) must beSome("pending")
     }
   }
 }

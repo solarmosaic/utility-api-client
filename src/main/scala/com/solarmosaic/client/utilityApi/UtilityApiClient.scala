@@ -30,6 +30,7 @@ import akka.util.Timeout
 import com.solarmosaic.client.utilityApi.`type`.FormatTypes
 import com.solarmosaic.client.utilityApi.`type`.FormatTypes.FormatType
 import com.solarmosaic.client.utilityApi.json.IsoDateTimeConversions
+import com.solarmosaic.client.utilityApi.model.request.{ServiceModifyRequest, AccountModifyRequest}
 import com.solarmosaic.client.utilityApi.model.response._
 import com.solarmosaic.client.utilityApi.util.PathWrappers
 import org.joda.time.DateTime
@@ -37,7 +38,8 @@ import spray.can.Http
 import spray.client.pipelining._
 import spray.http.HttpHeaders.{Accept, Authorization}
 import spray.http.Uri.Path
-import spray.http.{GenericHttpCredentials, HttpRequest}
+import spray.http.Uri.Path.Slash
+import spray.http.{Uri, GenericHttpCredentials, HttpRequest}
 import spray.httpx.{UnsuccessfulResponseException, SprayJsonSupport}
 import spray.httpx.unmarshalling.FromResponseUnmarshaller
 
@@ -60,36 +62,33 @@ case class UtilityApiClient(
   implicit val timeout = Timeout(timeoutDuration)
   import system.dispatcher
 
-  /** Base path to API endpoints */
-  lazy val base = Path("/api")
+  val baseUri = UtilityApiClient.uri
+  val basePath = baseUri.path
+
+  /** The client URI. */
+  def getUri: Uri = baseUri
+
+  /** The client URI with the given String segments appended to the base Path. */
+  def getUri(segments: Any*): Uri = getUri.withPath(basePath / segments.mkString("/"))
+
+  /** The client URI with the given Path appended to the base Path. */
+  def getUri(path: Path): Uri = getUri.withPath(basePath ++ Slash(path))
 
   /**
-   * Set up a host-specific connection with SSL encryption enabled.
-   */
-  protected[utilityApi] lazy val connection: Future[SendReceive] = for (
-    Http.HostConnectorInfo(connector, _) <- IO(Http) ? Http.HostConnectorSetup(
-      host = UtilityApiClient.host,
-      port = 443,
-      sslEncryption = true
-    )
-  ) yield sendReceive(connector)
-
-  /**
-   * Gets a future response from the host connection, unmarshalling it to the given type.
+   * Gets a future response for the given request, unmarshalling it to the given type.
    *
    * @param request The HTTP request.
    * @param format Which format to deliver the response in.
    * @tparam T The type to unmarshal the response to.
    * @return A Future containing the unmarshalled response object.
    */
-  protected[utilityApi] def response[T: FromResponseUnmarshaller](request: HttpRequest)
-      (implicit format: FormatType = FormatTypes.json): Future[T] = connection
-    .map(sendAndReceive => addHeader(Authorization(GenericHttpCredentials("Token", token)))
+  protected[utilityApi] def pipeline[T: FromResponseUnmarshaller](request: HttpRequest)
+      (implicit format: FormatType = FormatTypes.json): Future[T] = (
+      addHeader(Authorization(GenericHttpCredentials("Token", token)))
       ~> addHeader(Accept(format.mediaType))
-      ~> sendAndReceive
+      ~> sendReceive
       ~> unmarshal[T]
-    )
-    .flatMap(_(request))
+    ).apply(request)
 
   /**
    * Get an account by account uid.
@@ -97,11 +96,11 @@ case class UtilityApiClient(
    *
    * @param accountUid The unique identifier for the account.
    * @param format The response format.
-   * @return A Future containing Some account, or None if not found.
+   * @return A Future containing Some account, or None if the account was not found.
    */
   def getAccount(accountUid: String)
       (implicit format: FormatType = FormatTypes.json): Future[Option[AccountResponse]] =
-    response[Option[AccountResponse]](Get(base / "accounts" / accountUid)) recover {
+    pipeline[Option[AccountResponse]](Get(getUri("accounts", accountUid))) recover {
       case e: UnsuccessfulResponseException => None
     }
 
@@ -114,7 +113,7 @@ case class UtilityApiClient(
    */
   def getAccounts()
       (implicit format: FormatType = FormatTypes.json): Future[List[AccountResponse]] =
-    response[List[AccountResponse]](Get(base / "accounts")) recover {
+    pipeline[List[AccountResponse]](Get(getUri("accounts"))) recover {
       case e: UnsuccessfulResponseException => Nil
     }
 
@@ -128,7 +127,7 @@ case class UtilityApiClient(
    */
   def getBillsByServiceUid(serviceUid: String)
       (implicit format: FormatType = FormatTypes.json): Future[List[BillResponse]] =
-    response[List[BillResponse]](Get(base / "services" / serviceUid / "bills")) recover {
+    pipeline[List[BillResponse]](Get(getUri("services", serviceUid, "bills"))) recover {
       case e: UnsuccessfulResponseException => Nil
     }
 
@@ -142,13 +141,13 @@ case class UtilityApiClient(
    */
   def getIntervalsByServiceUid(serviceUid: String, start: Option[DateTime] = None, end: Option[DateTime] = None)
       (implicit format: FormatType = FormatTypes.json): Future[List[IntervalResponse]] =
-    response[List[IntervalResponse]] {
-      val path = base / "services" / serviceUid / "intervals"
+    pipeline[List[IntervalResponse]] {
+      val uri = getUri("services", serviceUid, "intervals")
       val query = Seq(
         start.map(s => "start" -> dateTimeToIsoFormat(s)),
         end.map(e => "end" -> dateTimeToIsoFormat(e))
       ).flatten
-      Get(path.withQuery(query: _*))
+      Get(uri.withQuery(query: _*))
     } recover {
       case e: UnsuccessfulResponseException => Nil
     }
@@ -159,11 +158,11 @@ case class UtilityApiClient(
    *
    * @param serviceUid The unique identifier for the service.
    * @param format The response format.
-   * @return A Future containing Some service, or None if not found.
+   * @return A Future containing Some service, or None if the service was not found.
    */
   def getService(serviceUid: String)
       (implicit format: FormatType = FormatTypes.json): Future[Option[ServiceResponse]] =
-    response[Option[ServiceResponse]](Get(base / "services" / serviceUid)) recover {
+    pipeline[Option[ServiceResponse]](Get(getUri("services", serviceUid))) recover {
       case e: UnsuccessfulResponseException => None
     }
 
@@ -176,7 +175,7 @@ case class UtilityApiClient(
    */
   def getServices()
       (implicit format: FormatType = FormatTypes.json): Future[List[ServiceResponse]] =
-    response[List[ServiceResponse]](Get(base / "services")) recover {
+    pipeline[List[ServiceResponse]](Get(getUri("services"))) recover {
       case e: UnsuccessfulResponseException => Nil
     }
 
@@ -190,11 +189,41 @@ case class UtilityApiClient(
    */
   def getServicesByAccountUid(accountUid: String)
       (implicit format: FormatType = FormatTypes.json): Future[List[ServiceResponse]] =
-    response[List[ServiceResponse]](Get(base / "services" withQuery "accounts" -> accountUid)) recover {
+    pipeline[List[ServiceResponse]](Get(getUri("services").withQuery("accounts" -> accountUid))) recover {
       case e: UnsuccessfulResponseException => Nil
+    }
+
+  /**
+   * Modify an account by account uid.
+   * @see https://utilityapi.com/docs#accounts-modify
+   *
+   * @param accountUid The unique identifier for the account.
+   * @param request The request model.
+   * @param format The request/response format.
+   * @return A Future containing Some account, or None if the account was not found.
+   */
+  def modifyAccount(accountUid: String, request: AccountModifyRequest)
+      (implicit format: FormatType = FormatTypes.json): Future[Option[AccountResponse]] =
+    pipeline[Option[AccountResponse]](Post(getUri("accounts", accountUid, "modify"), request)) recover {
+      case e: UnsuccessfulResponseException => None
+    }
+
+  /**
+   * Modify a service by service uid.
+   * @see https://utilityapi.com/docs#services-modify
+   *
+   * @param serviceUid The unique identifier for the service.
+   * @param request The request model.
+   * @param format The request/response format.
+   * @return A Future containing Some service, or None if the service was not found.
+   */
+  def modifyService(serviceUid: String, request: ServiceModifyRequest)
+      (implicit format: FormatType = FormatTypes.json): Future[Option[ServiceResponse]] =
+    pipeline[Option[ServiceResponse]](Post(getUri("services", serviceUid, "modify"), request)) recover {
+      case e: UnsuccessfulResponseException => None
     }
 }
 
 object UtilityApiClient {
-  val host = "utilityapi.com"
+  val uri = Uri("https://utilityapi.com/api")
 }

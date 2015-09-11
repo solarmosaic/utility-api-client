@@ -37,6 +37,8 @@ lazy val `utility-api-client` = (project in file("."))
     publishArtifact in Test := false,
     publishMavenStyle := true,
     publishTo := {
+      // NOTE: until this is published in Sonatype/Maven we are publishing it to our local Artifactory repository.
+      // If you are using this library in your application, you should remove this line.
       Some("MosaicArtifactory" at "http://art.intranet.solarmosaic.com/artifactory/internal")
 //      val nexus = "https://oss.sonatype.org/"
 //      if (isSnapshot.value)
@@ -44,13 +46,13 @@ lazy val `utility-api-client` = (project in file("."))
 //      else
 //        Some("releases" at nexus + "service/local/staging/deploy/maven2")
     },
-    scalaVersion := "2.11.4",
+    scalaVersion := "2.11.6",
     scmInfo := Some(ScmInfo(
       new URL("https://github.com/solarmosaic/utility-api-client"),
       "https://github.com/solarmosaic/utility-api-client.git"
     )),
     sbtVersion := "0.13.8",
     startYear := Some(2015),
-    resolvers := Seq("Artifactory" at "http://art.intranet.solarmosaic.com/artifactory/repo"),
-    version := "0.1.0" + buildVersion
+    resolvers := Seq("scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"),
+    version := "0.1.1" + buildVersion
   )
