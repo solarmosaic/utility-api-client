@@ -1,7 +1,7 @@
 val buildVersion = "-" + sys.props.get("ROOT_BUILD_NUMBER").orElse(sys.env.get("ROOT_BUILD_NUMBER"))
   .map("BUILD." + _).getOrElse("SNAPSHOT")
 
-lazy val `utility-api-client` = (project in file("."))
+lazy val client = (project in file("."))
   .configs(IntegrationTest)
   .settings(Defaults.itSettings: _*)
   .settings(
@@ -51,7 +51,7 @@ lazy val `utility-api-client` = (project in file("."))
       new URL("https://github.com/solarmosaic/utility-api-client"),
       "https://github.com/solarmosaic/utility-api-client.git"
     )),
-    sbtVersion := "0.13.8",
+    sbtVersion := "0.13.9",
     startYear := Some(2015),
     resolvers := Seq("scalaz-bintray" at "http://dl.bintray.com/scalaz/releases"),
     version := "0.1.1" + buildVersion

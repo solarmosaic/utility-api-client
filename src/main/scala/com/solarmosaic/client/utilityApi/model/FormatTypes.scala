@@ -1,4 +1,4 @@
-package com.solarmosaic.client.utilityApi.`type`
+package com.solarmosaic.client.utilityApi.model
 
 import spray.http.MediaType
 import spray.http.MediaTypes._

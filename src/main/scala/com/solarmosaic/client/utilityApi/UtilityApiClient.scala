@@ -24,24 +24,20 @@
 package com.solarmosaic.client.utilityApi
 
 import akka.actor.ActorSystem
-import akka.io.IO
-import akka.pattern.ask
 import akka.util.Timeout
-import com.solarmosaic.client.utilityApi.`type`.FormatTypes
-import com.solarmosaic.client.utilityApi.`type`.FormatTypes.FormatType
 import com.solarmosaic.client.utilityApi.json.IsoDateTimeConversions
-import com.solarmosaic.client.utilityApi.model.request.{ServiceModifyRequest, AccountModifyRequest}
+import com.solarmosaic.client.utilityApi.model.FormatTypes
+import com.solarmosaic.client.utilityApi.model.FormatTypes.FormatType
+import com.solarmosaic.client.utilityApi.model.request.{AccountModifyRequest, ServiceModifyRequest}
 import com.solarmosaic.client.utilityApi.model.response._
-import com.solarmosaic.client.utilityApi.util.PathWrappers
 import org.joda.time.DateTime
-import spray.can.Http
 import spray.client.pipelining._
 import spray.http.HttpHeaders.{Accept, Authorization}
 import spray.http.Uri.Path
 import spray.http.Uri.Path.Slash
-import spray.http.{Uri, GenericHttpCredentials, HttpRequest}
-import spray.httpx.{UnsuccessfulResponseException, SprayJsonSupport}
+import spray.http.{GenericHttpCredentials, HttpRequest, Uri}
 import spray.httpx.unmarshalling.FromResponseUnmarshaller
+import spray.httpx.{SprayJsonSupport, UnsuccessfulResponseException}
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
@@ -57,7 +53,7 @@ import scala.concurrent.duration._
 case class UtilityApiClient(
   token: String,
   timeoutDuration: FiniteDuration = 10.seconds
-) extends SprayJsonSupport with IsoDateTimeConversions with PathWrappers {
+) extends SprayJsonSupport with IsoDateTimeConversions {
   implicit val system = ActorSystem("utility-api-client")
   implicit val timeout = Timeout(timeoutDuration)
   import system.dispatcher

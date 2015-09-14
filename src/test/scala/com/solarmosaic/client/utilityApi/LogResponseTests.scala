@@ -6,10 +6,10 @@ import spray.json._
 class LogResponseTests extends Test {
   "LogResponse JSON format" should {
     "correctly deserialize from valid JSON" in {
-      sample.logResponseJson(sample.logResponse).parseJson.convertTo[LogResponse] shouldEqual sample.logResponse
+      response.json.log(response.log).parseJson.convertTo[LogResponse] shouldEqual response.log
     }
     "correctly round-trip back to itself" in {
-      sample.logResponse.toJson.convertTo[LogResponse] shouldEqual sample.logResponse
+      response.log.toJson.convertTo[LogResponse] shouldEqual response.log
     }
   }
 }
