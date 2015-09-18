@@ -2,15 +2,6 @@ package com.solarmosaic.client.utilityApi.json
 
 import spray.json._
 
-/**
- * Stringified JSON.
- *
- * @param json The underlying JSON String.
- */
-case class JsonString(json: String) {
-  override def toString = json
-}
-
 trait JsonStringJsonSupport {
 
   /** Implicitly convert `JsValue` to `JsonString`. */
@@ -21,7 +12,7 @@ trait JsonStringJsonSupport {
      * @param value The JsonString
      * @return JsValue
      */
-    def write(value: JsonString) = value.toJson
+    def write(value: JsonString) = value.toString.parseJson
 
     /**
      * Convert `JsValue` to `JsonString`.
