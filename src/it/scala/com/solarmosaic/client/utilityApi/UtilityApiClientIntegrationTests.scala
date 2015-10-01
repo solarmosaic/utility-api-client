@@ -15,6 +15,7 @@ import scala.concurrent.Await
  * some VM configuration parameters:
  *
  * -Dutility-api.token=<API_TOKEN> (A valid API token)
+ * -Dutility-api.referralId=<REFERRAL_UID> (A referral id, created by the portal form submission)
  * -Dutility-api.accountUidHasServices=<ACCOUNT_UID> (A valid account uid for an account that has services)
  * -Dutility-api.serviceUidHasIntervals<SERVICE_UID> (A valid service uid for a service that has intervals)
  *
@@ -27,6 +28,7 @@ class UtilityApiClientIntegrationTests extends Specification
   // Extract VM parameters
   val config: Map[String, String] = List(
     "utility-api.token",
+    "utility-api.referralId",
     "utility-api.accountUidHasServices",
     "utility-api.serviceUidHasIntervals"
   ).map(key => key.split("\\.").last -> sys.props.get(key)
@@ -43,6 +45,20 @@ class UtilityApiClientIntegrationTests extends Specification
 
   "getAccounts" should {
     "get all accounts" in {
+      accounts must beAnInstanceOf[List[AccountResponse]]
+      accounts must not be empty
+    }
+  }
+
+  "getAccountsByReferralIds" should {
+    "not get an account for invalid referral id" in {
+      val accounts = Await.result(client.getAccountsByReferralIds(List("invalid")), client.timeoutDuration)
+      accounts must beAnInstanceOf[List[AccountResponse]]
+      accounts must beEmpty
+    }
+
+    "get an account for valid referral id" in {
+      val accounts = Await.result(client.getAccountsByReferralIds(List(config("referralId"))), client.timeoutDuration)
       accounts must beAnInstanceOf[List[AccountResponse]]
       accounts must not be empty
     }
@@ -142,14 +158,14 @@ class UtilityApiClientIntegrationTests extends Specification
     }
   }
 
-  "getServicesByAccountUid" should {
+  "getServicesByAccountUids" should {
     "not get services for invalid account uid" in {
-      Await.result(client.getServicesByAccountUid(invalidUid), client.timeoutDuration) === Nil
+      Await.result(client.getServicesByAccountUids(List(invalidUid)), client.timeoutDuration) === Nil
     }
 
     "get services for valid account uid" in {
       val accountServices = Await.result(
-        client.getServicesByAccountUid(config("accountUidHasServices")),
+        client.getServicesByAccountUids(List(config("accountUidHasServices"))),
         client.timeoutDuration
       )
 

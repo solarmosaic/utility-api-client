@@ -114,6 +114,22 @@ case class UtilityApiClient(
     }
 
   /**
+   * Get accounts by referral ids.
+   * @see https://utilityapi.com/api/docs/api.html#accounts
+   *
+   * @param referralIds List of referral ids.
+   * @param format The response format.
+   * @return A Future containing a list of accounts.
+   */
+  def getAccountsByReferralIds(referralIds: List[String])
+      (implicit format: FormatType = FormatTypes.json): Future[List[AccountResponse]] =
+    pipeline[List[AccountResponse]](Get(
+      getUri("accounts").withQuery("referrals" -> referralIds.mkString(","))
+    )) recover {
+      case e: UnsuccessfulResponseException => Nil
+    }
+
+  /**
    * Get bills by service uid.
    * @see https://utilityapi.com/api/docs/api.html#bills
    *
@@ -176,16 +192,18 @@ case class UtilityApiClient(
     }
 
   /**
-   * Get services by account uid.
+   * Get services by account uids.
    * @see https://utilityapi.com/api/docs/api.html#services
    *
-   * @param accountUid The unique identifier for the account.
+   * @param accountUids The unique identifier for the account.
    * @param format The response format.
    * @return A Future containing a list of account services.
    */
-  def getServicesByAccountUid(accountUid: String)
+  def getServicesByAccountUids(accountUids: List[String])
       (implicit format: FormatType = FormatTypes.json): Future[List[ServiceResponse]] =
-    pipeline[List[ServiceResponse]](Get(getUri("services").withQuery("accounts" -> accountUid))) recover {
+    pipeline[List[ServiceResponse]](Get(
+      getUri("services").withQuery("accounts" -> accountUids.mkString(","))
+    )) recover {
       case e: UnsuccessfulResponseException => Nil
     }
 
